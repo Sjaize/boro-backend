@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user, get_transactions_service
+from app.schemas.transaction import ReviewCreate, TransactionCreate
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 
@@ -10,8 +11,8 @@ router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 @router.get("")
 async def list_transactions(
     role: Optional[str] = Query(None),
-    page: int = Query(1),
-    size: int = Query(10),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
     current_user: dict = Depends(get_current_user),
     service=Depends(get_transactions_service),
 ):
@@ -20,7 +21,7 @@ async def list_transactions(
 
 @router.post("")
 async def create_transaction(
-    body: dict,
+    body: TransactionCreate,
     current_user: dict = Depends(get_current_user),
     service=Depends(get_transactions_service),
 ):
@@ -39,7 +40,7 @@ async def get_transaction(
 @router.post("/{transaction_id}/reviews")
 async def create_review(
     transaction_id: int,
-    body: dict,
+    body: ReviewCreate,
     current_user: dict = Depends(get_current_user),
     service=Depends(get_transactions_service),
 ):

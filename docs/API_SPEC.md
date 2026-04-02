@@ -64,6 +64,13 @@
 
 ### Posts
 
+#### 인증 메모
+
+- `GET /api/posts`는 인증 없이 호출 가능
+- `GET /api/posts/{post_id}`와 게시글 작성/수정/삭제, 좋아요, 채팅방 생성 API는 인증 필요
+- auth/JWT API 완성 전 non-mock 환경에서는 보호 API 테스트 시 `X-User-Id` 헤더를 임시로 사용
+- 최종 배포 기준 인증 방식은 `Authorization: Bearer <access_token>`
+
 | Method | Endpoint | Description | Request | Response |
 | --- | --- | --- | --- | --- |
 | GET | /api/posts | 게시물 목록/검색 조회 (query: keyword, post_type, category, is_urgent, region_name, page, size, sort 등) | query: { keyword: "드릴", post_type: "LEND", category: "공구", is_urgent: false, region_name: "역삼동", page: 1, size: 20, sort: "created_at" } | { "data": { "posts":[ { "post_id": 1, "title": "전동 드릴 빌려드려요", "post_type": "LEND", "price": 5000, "region_name": "역삼동", "is_urgent": false, "thumbnail_url": "https://example.com/thumb.jpg", "like_count": 5, "chat_count": 2, "status": "AVAILABLE", "created_at": "2026-03-31T09:00:00" } ], "page": 1, "size": 20, "has_next": true } } |

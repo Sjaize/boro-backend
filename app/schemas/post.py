@@ -28,6 +28,7 @@ class PostCreate(BaseModel):
     category: str
     is_urgent: bool
     rental_period_text: str
+    meeting_place_text: Optional[str] = None
     region_name: str
     lat: float
     lng: float

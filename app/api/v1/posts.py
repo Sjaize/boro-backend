@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user, get_posts_service
+from app.schemas.post import PostCreate, PostUpdate
 
 router = APIRouter(prefix="/api/posts", tags=["Posts"])
 
@@ -14,8 +15,8 @@ async def list_posts(
     category: Optional[str] = Query(None),
     is_urgent: Optional[bool] = Query(None),
     region_name: Optional[str] = Query(None),
-    page: int = Query(1),
-    size: int = Query(20),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     sort: str = Query("created_at"),
     service=Depends(get_posts_service),
 ):
@@ -34,7 +35,7 @@ async def list_posts(
 
 @router.post("")
 async def create_post(
-    body: dict,
+    body: PostCreate,
     current_user: dict = Depends(get_current_user),
     service=Depends(get_posts_service),
 ):
@@ -53,7 +54,7 @@ async def get_post(
 @router.patch("/{post_id}")
 async def update_post(
     post_id: int,
-    body: dict,
+    body: PostUpdate,
     current_user: dict = Depends(get_current_user),
     service=Depends(get_posts_service),
 ):
