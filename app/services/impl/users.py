@@ -205,12 +205,16 @@ class UsersService:
         return user
 
     def _serialize_post_summary(self, post: Post) -> dict:
+        thumbnail_url = post.images[0].image_url if post.images else None
+
         return {
             "post_id": post.id,
             "title": post.title,
             "post_type": post.post_type,
             "price": post.price or 0,
             "region_name": post.region_name or "",
+            "is_urgent": bool(post.is_urgent),
+            "thumbnail_url": thumbnail_url,
             "like_count": post.like_count or 0,
             "chat_count": post.chat_count or 0,
             "status": post.status,

@@ -130,8 +130,11 @@ class UserRepository:
             user.notification_radius_m = notification_radius_m
 
         if interest_keywords is not None:
+            # Clear current keywords first so re-saving the same list stays idempotent.
+            user.interest_keywords.clear()
+            self.db.flush()
             user.interest_keywords = [
-                UserInterestKeyword(keyword=keyword)
+                UserInterestKeyword(user_id=user.id, keyword=keyword)
                 for keyword in interest_keywords
             ]
 
