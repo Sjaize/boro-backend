@@ -76,3 +76,22 @@ class ChatReadUpdate(BaseModel):
 class ChatRoomCreateResponse(BaseModel):
     chat_room_id: int
     is_new: bool
+
+
+class ChatRoomListResponse(BaseModel):
+    chat_rooms: List[ChatRoomListItem]
+    page: int
+    size: int
+    has_next: bool
+
+
+class MessageListResponse(BaseModel):
+    messages: List[ChatMessageListItem]
+    next_cursor: Optional[int] = None
+    has_next: bool
+
+
+class ChatMarkReadResponse(BaseModel):
+    chat_room_id: int
+    last_read_message_id: int
+    unread_count: int

@@ -3,12 +3,21 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_chats_service, get_current_user
-from app.schemas.chat import ChatMessageCreate, ChatReadUpdate
+from app.schemas.chat import (
+    ChatMarkReadResponse,
+    ChatMessageCreate,
+    ChatMessageListItem,
+    ChatReadUpdate,
+    ChatRoomDetail,
+    ChatRoomListResponse,
+    MessageListResponse,
+)
+from app.schemas.common import DataResponse
 
 router = APIRouter(prefix="/api/chats", tags=["Chats"])
 
 
-@router.get("")
+@router.get("", response_model=DataResponse[ChatRoomListResponse])
 async def list_chat_rooms(
     type: str = Query("ALL"),
     page: int = Query(1),
@@ -19,7 +28,7 @@ async def list_chat_rooms(
     return {"data": service.list_chat_rooms(current_user["id"], type, page, size)}
 
 
-@router.get("/{chat_room_id}")
+@router.get("/{chat_room_id}", response_model=DataResponse[ChatRoomDetail])
 async def get_chat_room(
     chat_room_id: int,
     current_user: dict = Depends(get_current_user),
@@ -28,7 +37,7 @@ async def get_chat_room(
     return {"data": service.get_chat_room(chat_room_id, current_user["id"])}
 
 
-@router.get("/{chat_room_id}/messages")
+@router.get("/{chat_room_id}/messages", response_model=DataResponse[MessageListResponse])
 async def list_messages(
     chat_room_id: int,
     cursor: Optional[int] = Query(None),
@@ -39,7 +48,7 @@ async def list_messages(
     return {"data": service.list_messages(chat_room_id, current_user["id"], cursor, size)}
 
 
-@router.post("/{chat_room_id}/messages")
+@router.post("/{chat_room_id}/messages", response_model=DataResponse[ChatMessageListItem])
 async def send_message(
     chat_room_id: int,
     body: ChatMessageCreate,
@@ -49,7 +58,7 @@ async def send_message(
     return {"data": service.send_message(chat_room_id, current_user["id"], body.model_dump())}
 
 
-@router.patch("/{chat_room_id}/read")
+@router.patch("/{chat_room_id}/read", response_model=DataResponse[ChatMarkReadResponse])
 async def mark_read(
     chat_room_id: int,
     body: ChatReadUpdate,

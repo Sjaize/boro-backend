@@ -60,3 +60,21 @@ class ReviewListItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ReviewListResponse(BaseModel):
+    reviews: List[ReviewListItem]
+    page: int
+    size: int
+    has_next: bool
+
+
+class UserUpdateResponse(BaseModel):
+    id: int
+    nickname: str
+    profile_image_url: Optional[str] = None
+
+
+class UserSettingsResponse(BaseModel):
+    notification_radius_m: Optional[int] = None
+    interest_keywords: Optional[list[str]] = None

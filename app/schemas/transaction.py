@@ -90,3 +90,19 @@ class ReviewResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TransactionListResponse(BaseModel):
+    transactions: List[TransactionListItem]
+    page: int
+    size: int
+    has_next: bool
+
+
+class TransactionCreateResponse(BaseModel):
+    transaction_id: int
+    post_id: int
+    chat_room_id: int
+    lender_user_id: int
+    borrower_user_id: int
+    completed_at: datetime

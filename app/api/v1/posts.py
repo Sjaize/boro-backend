@@ -3,12 +3,22 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user, get_posts_service
-from app.schemas.post import PostCreate, PostUpdate
+from app.schemas.chat import ChatRoomCreateResponse
+from app.schemas.common import DataResponse
+from app.schemas.post import (
+    PostCreate,
+    PostCreateResponse,
+    PostDeleteResponse,
+    PostDetail,
+    PostLikeResponse,
+    PostListResponse,
+    PostUpdate,
+)
 
 router = APIRouter(prefix="/api/posts", tags=["Posts"])
 
 
-@router.get("")
+@router.get("", response_model=DataResponse[PostListResponse])
 async def list_posts(
     keyword: Optional[str] = Query(None),
     post_type: Optional[str] = Query(None),
@@ -33,7 +43,7 @@ async def list_posts(
     return {"data": service.list_posts(filters)}
 
 
-@router.post("")
+@router.post("", response_model=DataResponse[PostCreateResponse])
 async def create_post(
     body: PostCreate,
     current_user: dict = Depends(get_current_user),
@@ -42,7 +52,7 @@ async def create_post(
     return {"data": service.create_post(current_user["id"], body)}
 
 
-@router.get("/{post_id}")
+@router.get("/{post_id}", response_model=DataResponse[PostDetail])
 async def get_post(
     post_id: int,
     current_user: dict = Depends(get_current_user),
@@ -51,7 +61,7 @@ async def get_post(
     return {"data": service.get_post(post_id, current_user["id"])}
 
 
-@router.patch("/{post_id}")
+@router.patch("/{post_id}", response_model=DataResponse[PostCreateResponse])
 async def update_post(
     post_id: int,
     body: PostUpdate,
@@ -61,7 +71,7 @@ async def update_post(
     return {"data": service.update_post(post_id, current_user["id"], body)}
 
 
-@router.delete("/{post_id}")
+@router.delete("/{post_id}", response_model=DataResponse[PostDeleteResponse])
 async def delete_post(
     post_id: int,
     current_user: dict = Depends(get_current_user),
@@ -70,7 +80,7 @@ async def delete_post(
     return {"data": service.delete_post(post_id, current_user["id"])}
 
 
-@router.post("/{post_id}/likes")
+@router.post("/{post_id}/likes", response_model=DataResponse[PostLikeResponse])
 async def like_post(
     post_id: int,
     current_user: dict = Depends(get_current_user),
@@ -79,7 +89,7 @@ async def like_post(
     return {"data": service.like_post(post_id, current_user["id"])}
 
 
-@router.delete("/{post_id}/likes")
+@router.delete("/{post_id}/likes", response_model=DataResponse[PostLikeResponse])
 async def unlike_post(
     post_id: int,
     current_user: dict = Depends(get_current_user),
@@ -88,7 +98,7 @@ async def unlike_post(
     return {"data": service.unlike_post(post_id, current_user["id"])}
 
 
-@router.post("/{post_id}/chats")
+@router.post("/{post_id}/chats", response_model=DataResponse[ChatRoomCreateResponse])
 async def create_chat_from_post(
     post_id: int,
     current_user: dict = Depends(get_current_user),

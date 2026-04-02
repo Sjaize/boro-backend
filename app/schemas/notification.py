@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -15,6 +15,13 @@ class NotificationListItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class NotificationListResponse(BaseModel):
+    notifications: List[NotificationListItem]
+    page: int
+    size: int
+    has_next: bool
 
 
 class NotificationReadResponse(BaseModel):

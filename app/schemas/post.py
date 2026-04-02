@@ -95,3 +95,14 @@ class PostLikeResponse(BaseModel):
 class PostDeleteResponse(BaseModel):
     post_id: int
     deleted: bool
+
+
+class PostListResponse(BaseModel):
+    posts: List[PostListItem]
+    page: int
+    size: int
+    has_next: bool
+
+
+class PostCreateResponse(BaseModel):
+    post_id: int

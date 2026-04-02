@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user, get_notifications_service
+from app.schemas.common import DataResponse
+from app.schemas.notification import NotificationListResponse, NotificationReadResponse
 
 router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 
 
-@router.get("")
+@router.get("", response_model=DataResponse[NotificationListResponse])
 async def list_notifications(
     page: int = Query(1),
     size: int = Query(20),
@@ -15,7 +17,7 @@ async def list_notifications(
     return {"data": service.list_notifications(current_user["id"], page, size)}
 
 
-@router.patch("/{notification_id}/read")
+@router.patch("/{notification_id}/read", response_model=DataResponse[NotificationReadResponse])
 async def mark_read(
     notification_id: int,
     current_user: dict = Depends(get_current_user),
