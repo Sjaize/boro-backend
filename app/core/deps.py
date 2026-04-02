@@ -11,6 +11,7 @@ from app.repositories.users import UserRepository
 from app.services.impl import posts as impl_posts
 from app.services.impl import transactions as impl_transactions
 from app.services.impl import users as impl_users
+from app.services.impl.chats import ChatsService
 from app.services.impl.notifications import NotificationsService
 from app.services.mock import auth as mock_auth
 from app.services.mock import chats as mock_chats
@@ -74,10 +75,10 @@ def get_posts_service(
     return impl_posts.PostsService(repository)
 
 
-def get_chats_service():
+def get_chats_service(db: Session = Depends(get_db)):
     if settings.MOCK_MODE:
         return mock_chats.MockChatsService()
-    raise NotImplementedError
+    return ChatsService(db)
 
 
 def get_transactions_repository(

@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_chats_service, get_current_user
+from app.schemas.chat import ChatMessageCreate, ChatReadUpdate
 
 router = APIRouter(prefix="/api/chats", tags=["Chats"])
 
@@ -41,18 +42,18 @@ async def list_messages(
 @router.post("/{chat_room_id}/messages")
 async def send_message(
     chat_room_id: int,
-    body: dict,
+    body: ChatMessageCreate,
     current_user: dict = Depends(get_current_user),
     service=Depends(get_chats_service),
 ):
-    return {"data": service.send_message(chat_room_id, current_user["id"], body)}
+    return {"data": service.send_message(chat_room_id, current_user["id"], body.model_dump())}
 
 
 @router.patch("/{chat_room_id}/read")
 async def mark_read(
     chat_room_id: int,
-    body: dict,
+    body: ChatReadUpdate,
     current_user: dict = Depends(get_current_user),
     service=Depends(get_chats_service),
 ):
-    return {"data": service.mark_read(chat_room_id, current_user["id"], body.get("last_read_message_id"))}
+    return {"data": service.mark_read(chat_room_id, current_user["id"], body.last_read_message_id)}

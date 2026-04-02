@@ -24,8 +24,8 @@ class ExpiredTokenError(AppError):
 
 
 class ForbiddenError(AppError):
-    def __init__(self):
-        super().__init__(403, "FORBIDDEN", "Forbidden", "접근 권한이 없습니다.")
+    def __init__(self, detail: str = "접근 권한이 없습니다."):
+        super().__init__(403, "FORBIDDEN", "Forbidden", detail)
 
 
 class NotFoundError(AppError):

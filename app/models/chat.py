@@ -35,6 +35,7 @@ class ChatRoomParticipant(Base):
     joined_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     chat_room = relationship("ChatRoom", back_populates="participants")
+    user = relationship("User")
 
     __table_args__ = (UniqueConstraint("chat_room_id", "user_id", name="uq_chat_room_participant"),)
 
