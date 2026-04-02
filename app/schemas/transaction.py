@@ -6,9 +6,10 @@ from datetime import datetime
 class TransactionReviewInfo(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
-        json_schema_extra={"example": {"has_received_review": True}},
+        json_schema_extra={"example": {"has_received_review": True, "has_written_review": False}},
     )
     has_received_review: bool
+    has_written_review: bool = False
 
 
 class TransactionListItem(BaseModel):
@@ -83,22 +84,52 @@ class TransactionPostInfo(BaseModel):
     like_count: int
 
 
+class WrittenReviewDetail(BaseModel):
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "review_id": 20,
+                "rating": 5,
+                "comment": "Promise kept and pickup was smooth.",
+                "tags": ["KEEPS_PROMISES", "KIND_AND_POLITE"],
+                "created_at": "2026-04-01T10:00:00Z",
+            }
+        },
+    )
+    review_id: int
+    rating: int
+    comment: Optional[str] = None
+    tags: List[str]
+    created_at: datetime
+
+
 class ReviewDetail(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
             "example": {
                 "has_received_review": True,
+                "has_written_review": True,
                 "rating": 5,
                 "comment": "시간 약속 잘 지켜주셨어요.",
                 "tags": ["KEEPS_PROMISES", "KIND_AND_POLITE"],
+                "written_review": {
+                    "review_id": 20,
+                    "rating": 5,
+                    "comment": "Promise kept and pickup was smooth.",
+                    "tags": ["KEEPS_PROMISES", "KIND_AND_POLITE"],
+                    "created_at": "2026-04-01T10:00:00Z",
+                },
             }
         },
     )
     has_received_review: bool
+    has_written_review: bool
     rating: Optional[int] = None
     comment: Optional[str] = None
     tags: Optional[List[str]] = None
+    written_review: Optional[WrittenReviewDetail] = None
 
 
 class TransactionDetail(BaseModel):

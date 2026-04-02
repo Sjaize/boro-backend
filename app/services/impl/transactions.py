@@ -106,6 +106,8 @@ class TransactionsService:
 
         my_role = self._get_transaction_role(transaction, user_id)
         received_review = self._get_received_review(transaction, user_id)
+        written_review = self._get_review_written_by(transaction, user_id)
+        written_review = self._get_review_written_by(transaction, user_id)
 
         return {
             "transaction_id": transaction.id,
@@ -129,9 +131,11 @@ class TransactionsService:
             },
             "review": {
                 "has_received_review": received_review is not None,
+                "has_written_review": written_review is not None,
                 "rating": received_review.rating if received_review is not None else None,
                 "comment": received_review.comment if received_review is not None else None,
                 "tags": received_review.tags if received_review is not None else None,
+                "written_review": self._serialize_written_review(written_review),
             },
         }
 
@@ -195,6 +199,7 @@ class TransactionsService:
 
         post_image_url = post.images[0].image_url if post.images else None
         received_review = self._get_received_review(transaction, user_id)
+        written_review = self._get_review_written_by(transaction, user_id)
 
         return {
             "transaction_id": transaction.id,
@@ -210,6 +215,7 @@ class TransactionsService:
             "completed_at": transaction.completed_at,
             "review": {
                 "has_received_review": received_review is not None,
+                "has_written_review": written_review is not None,
             },
         }
 
@@ -224,6 +230,18 @@ class TransactionsService:
             if review.reviewer_user_id == user_id:
                 return review
         return None
+
+    def _serialize_written_review(self, review: Review | None) -> dict | None:
+        if review is None:
+            return None
+
+        return {
+            "review_id": review.id,
+            "rating": review.rating,
+            "comment": review.comment,
+            "tags": review.tags or [],
+            "created_at": review.created_at,
+        }
 
     def _get_transaction_role(self, transaction: Transaction, user_id: int) -> str:
         if transaction.borrower_user_id == user_id:

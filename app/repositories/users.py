@@ -107,9 +107,12 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def update_location(self, user: User, *, lat: float, lng: float) -> User:
+    def update_location(self, user: User, *, lat: float, lng: float, region_name: str | None = None) -> User:
         user.current_lat = lat
         user.current_lng = lng
+        
+        if region_name is not None:
+            user.region_name = region_name
 
         self.db.add(user)
         self.db.commit()
@@ -127,8 +130,11 @@ class UserRepository:
             user.notification_radius_m = notification_radius_m
 
         if interest_keywords is not None:
+            # Clear current keywords first so re-saving the same list stays idempotent.
+            user.interest_keywords.clear()
+            self.db.flush()
             user.interest_keywords = [
-                UserInterestKeyword(keyword=keyword)
+                UserInterestKeyword(user_id=user.id, keyword=keyword)
                 for keyword in interest_keywords
             ]
 
