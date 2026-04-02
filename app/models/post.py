@@ -16,6 +16,7 @@ class Post(Base, TimestampMixin):
     content = Column(Text, nullable=False)
     price = Column(Integer, default=0)
     is_urgent = Column(Boolean, default=False)
+    category = Column(String(50))
     rental_period_text = Column(String(100))
     meeting_place_text = Column(String(200))
     region_name = Column(String(100))

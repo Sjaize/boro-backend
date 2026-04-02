@@ -35,8 +35,8 @@ class LocationResponse(BaseModel):
 
 
 class UserSettingsUpdate(BaseModel):
-    notification_radius_m: int
-    interest_keywords: list[str]
+    notification_radius_m: Optional[int] = None
+    interest_keywords: Optional[list[str]] = None
 
 
 class UserProfileResponse(BaseModel):

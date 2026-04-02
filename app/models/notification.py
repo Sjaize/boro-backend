@@ -10,7 +10,6 @@ class Notification(Base):
 
     id = Column(BigInteger, primary_key=True, index=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
-    post_user_id = Column(BigInteger)  # To identify who triggered (optional, can be null)
     type = Column(String(50), nullable=False)  # urgent_post, chat_message, interest_post
     title = Column(String(200), nullable=False)
     body = Column(Text, nullable=False)

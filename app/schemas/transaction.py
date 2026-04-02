@@ -40,6 +40,7 @@ class TransactionPostInfo(BaseModel):
     category: str
     rental_period_text: Optional[str] = None
     meeting_place_text: Optional[str] = None
+    region_name: str
     post_image_urls: List[str]
     chat_count: int
     like_count: int
