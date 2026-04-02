@@ -62,18 +62,28 @@ class UsersService:
         normalized_lat = self._normalize_coordinate(lat, "lat", -90, 90)
         normalized_lng = self._normalize_coordinate(lng, "lng", -180, 180)
 
+        # TODO: 실제 운영 환경에서는 카카오/구글 API 등을 통해 역지오코딩 수행
+        full_address = "서울특별시 강남구 역삼동"
+        region_name = self._extract_region_name(full_address)
+
         updated_user = self.user_repository.update_location(
             user,
             lat=normalized_lat,
             lng=normalized_lng,
+            region_name=region_name,
         )
 
         return {
             "region_name": updated_user.region_name or "",
-            "full_address": updated_user.region_name or "",
+            "full_address": full_address,
             "lat": self._to_float(updated_user.current_lat),
             "lng": self._to_float(updated_user.current_lng),
         }
+
+    def _extract_region_name(self, full_address: str) -> str:
+        """전체 주소에서 마지막 단어(동네명)만 추출 (예: '서울특별시 강남구 역삼동' -> '역삼동')"""
+        parts = full_address.split()
+        return parts[-1] if parts else ""
 
     def update_settings(self, user_id: int, data: dict) -> dict:
         user = self._get_user_or_raise(user_id)

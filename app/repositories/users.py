@@ -107,9 +107,12 @@ class UserRepository:
         self.db.refresh(user)
         return user
 
-    def update_location(self, user: User, *, lat: float, lng: float) -> User:
+    def update_location(self, user: User, *, lat: float, lng: float, region_name: str | None = None) -> User:
         user.current_lat = lat
         user.current_lng = lng
+        
+        if region_name is not None:
+            user.region_name = region_name
 
         self.db.add(user)
         self.db.commit()
