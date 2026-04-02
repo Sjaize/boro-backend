@@ -1,5 +1,9 @@
 from fastapi import Depends, Header
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
+
+http_bearer = HTTPBearer(auto_error=False)
 
 from app.core.config import settings
 from app.core.db import get_db
@@ -11,6 +15,7 @@ from app.repositories.users import UserRepository
 from app.services.impl import posts as impl_posts
 from app.services.impl import transactions as impl_transactions
 from app.services.impl import users as impl_users
+from app.services.impl.auth import AuthService
 from app.services.impl.chats import ChatsService
 from app.services.impl.notifications import NotificationsService
 from app.services.mock import auth as mock_auth
@@ -24,17 +29,27 @@ MOCK_CURRENT_USER = {"id": 1, "nickname": "홍길동", "region_name": "역삼동
 
 
 async def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(http_bearer),
     x_user_id: int | None = Header(default=None, alias="X-User-Id"),
     db: Session = Depends(get_db),
 ) -> dict:
     if settings.MOCK_MODE:
         return MOCK_CURRENT_USER
 
-    # Until JWT auth is wired, an explicit header keeps non-mock flows testable.
-    if x_user_id is None:
+    if credentials:
+        try:
+            payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            if payload.get("type") != "access":
+                raise InvalidTokenError()
+            user_id = int(payload.get("sub"))
+        except JWTError:
+            raise InvalidTokenError()
+    elif x_user_id is not None:
+        user_id = x_user_id
+    else:
         raise InvalidTokenError()
 
-    user = db.get(User, x_user_id)
+    user = db.get(User, user_id)
     if user is None:
         raise NotFoundError("사용자를 찾을 수 없습니다.")
 
@@ -45,10 +60,10 @@ async def get_current_user(
     }
 
 
-def get_auth_service():
+def get_auth_service(db: Session = Depends(get_db)):
     if settings.MOCK_MODE:
         return mock_auth.MockAuthService()
-    raise NotImplementedError
+    return AuthService(db)
 
 
 def get_users_repository(db: Session = Depends(get_db)) -> UserRepository:

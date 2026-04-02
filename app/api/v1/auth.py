@@ -1,23 +1,31 @@
 from fastapi import APIRouter, Depends
 
 from app.core.deps import get_auth_service, get_current_user
+from app.schemas.auth import (
+    AuthResponseData,
+    LogoutRequest,
+    OAuthLoginRequest,
+    TokenRefreshRequest,
+    TokenRefreshResponseData,
+)
+from app.schemas.common import DataResponse
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
-@router.post("/oauth/{provider}")
-async def oauth_login(provider: str, body: dict, service=Depends(get_auth_service)):
-    return {"data": service.oauth_login(provider, body.get("access_token", ""))}
+@router.post("/oauth/{provider}", response_model=DataResponse[AuthResponseData])
+async def oauth_login(provider: str, body: OAuthLoginRequest, service=Depends(get_auth_service)):
+    return {"data": service.oauth_login(provider, body.access_token)}
 
 
-@router.post("/refresh")
-async def refresh_token(body: dict, service=Depends(get_auth_service)):
-    return {"data": service.refresh_token(body.get("refresh_token", ""))}
+@router.post("/refresh", response_model=DataResponse[TokenRefreshResponseData])
+async def refresh_token(body: TokenRefreshRequest, service=Depends(get_auth_service)):
+    return {"data": service.refresh_token(body.refresh_token)}
 
 
 @router.post("/logout")
-async def logout(body: dict, service=Depends(get_auth_service)):
-    service.logout(body.get("refresh_token", ""))
+async def logout(body: LogoutRequest, service=Depends(get_auth_service)):
+    service.logout(body.refresh_token)
     return {"data": None}
 
 
