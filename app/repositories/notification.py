@@ -1,9 +1,11 @@
-from datetime import datetime
+from __future__ import annotations
+
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.notification import Notification
+from app.models.notification import Notification, UserDeviceToken
 from app.models.user import User
 
 
@@ -32,6 +34,87 @@ class NotificationRepository:
         self.db.commit()
         self.db.refresh(notification)
         return notification
+
+    def upsert_device_token(self, *, user_id: int, device_token: str, platform: str) -> UserDeviceToken:
+        now = datetime.now(UTC).replace(tzinfo=None)
+        token = (
+            self.db.execute(
+                select(UserDeviceToken).where(UserDeviceToken.device_token == device_token)
+            )
+            .scalars()
+            .one_or_none()
+        )
+
+        if token is None:
+            token = UserDeviceToken(
+                user_id=user_id,
+                device_token=device_token,
+                platform=platform,
+                is_active=True,
+                last_seen_at=now,
+            )
+        else:
+            token.user_id = user_id
+            token.platform = platform
+            token.is_active = True
+            token.last_seen_at = now
+
+        self.db.add(token)
+        self.db.commit()
+        self.db.refresh(token)
+        return token
+
+    def deactivate_device_token(self, *, user_id: int, device_token: str) -> bool:
+        token = (
+            self.db.execute(
+                select(UserDeviceToken)
+                .where(UserDeviceToken.user_id == user_id)
+                .where(UserDeviceToken.device_token == device_token)
+                .where(UserDeviceToken.is_active.is_(True))
+            )
+            .scalars()
+            .one_or_none()
+        )
+
+        if token is None:
+            return False
+
+        token.is_active = False
+        self.db.add(token)
+        self.db.commit()
+        return True
+
+    def deactivate_device_tokens(self, device_tokens: list[str]) -> None:
+        if not device_tokens:
+            return
+
+        tokens = (
+            self.db.execute(
+                select(UserDeviceToken).where(UserDeviceToken.device_token.in_(device_tokens))
+            )
+            .scalars()
+            .all()
+        )
+
+        if not tokens:
+            return
+
+        for token in tokens:
+            token.is_active = False
+            self.db.add(token)
+
+        self.db.commit()
+
+    def find_active_device_tokens_by_user_ids(self, user_ids: list[int]) -> list[UserDeviceToken]:
+        if not user_ids:
+            return []
+
+        statement = (
+            select(UserDeviceToken)
+            .where(UserDeviceToken.user_id.in_(user_ids))
+            .where(UserDeviceToken.is_active.is_(True))
+        )
+        return list(self.db.execute(statement).scalars().all())
 
     def find_recent_location_candidates(
         self,

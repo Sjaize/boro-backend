@@ -13,6 +13,10 @@ class Settings(BaseSettings):
 
     KAKAO_API_KEY: str = ""
 
+    FCM_PROJECT_ID: str = ""
+    FCM_SERVICE_ACCOUNT_FILE: str = ""
+    FCM_TIMEOUT_SECONDS: int = 10
+
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
     AWS_S3_BUCKET: str = ""

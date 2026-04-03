@@ -31,6 +31,7 @@ class User(Base, TimestampMixin):
     interest_keywords = relationship("UserInterestKeyword", back_populates="user", cascade="all, delete-orphan")
     posts = relationship("Post", back_populates="author")
     notifications = relationship("Notification", foreign_keys="Notification.user_id", back_populates="user")
+    device_tokens = relationship("UserDeviceToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class SocialAccount(Base, TimestampMixin):

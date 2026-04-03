@@ -3,7 +3,7 @@ from app.models.user import User, SocialAccount, UserInterestKeyword
 from app.models.post import Post, PostImage, PostLike
 from app.models.chat import ChatRoom, ChatRoomParticipant, ChatMessage
 from app.models.transaction import Transaction, Review
-from app.models.notification import Notification
+from app.models.notification import Notification, UserDeviceToken
 
 __all__ = [
     "Base",
@@ -19,4 +19,5 @@ __all__ = [
     "Transaction",
     "Review",
     "Notification",
+    "UserDeviceToken",
 ]
