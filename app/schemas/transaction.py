@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
+from app.schemas.common import UTCDatetime
 
 
 class TransactionReviewInfo(BaseModel):
@@ -42,7 +42,7 @@ class TransactionListItem(BaseModel):
     rental_period_text: Optional[str] = None
     chat_count: int
     like_count: int
-    completed_at: datetime
+    completed_at: UTCDatetime
     review: TransactionReviewInfo
 
 
@@ -101,7 +101,7 @@ class WrittenReviewDetail(BaseModel):
     rating: int
     comment: Optional[str] = None
     tags: List[str]
-    created_at: datetime
+    created_at: UTCDatetime
 
 
 class ReviewDetail(BaseModel):
@@ -171,7 +171,7 @@ class TransactionDetail(BaseModel):
     lender_user_id: int
     borrower_user_id: int
     my_role: str
-    completed_at: datetime
+    completed_at: UTCDatetime
     post: TransactionPostInfo
     review: ReviewDetail
 
@@ -210,7 +210,7 @@ class ReviewResponse(BaseModel):
     rating: int
     comment: Optional[str] = None
     tags: List[str]
-    created_at: datetime
+    created_at: UTCDatetime
 
 
 class TransactionListResponse(BaseModel):
@@ -263,4 +263,4 @@ class TransactionCreateResponse(BaseModel):
     chat_room_id: int
     lender_user_id: int
     borrower_user_id: int
-    completed_at: datetime
+    completed_at: UTCDatetime

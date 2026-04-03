@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
+from app.schemas.common import UTCDatetime
 
 
 class ChatRoomListItem(BaseModel):
@@ -132,7 +132,7 @@ class ChatMessageListItem(BaseModel):
     sender_user_id: int
     message_type: str
     content: str
-    created_at: datetime
+    created_at: UTCDatetime
     is_mine: bool
     is_read: bool = False
 

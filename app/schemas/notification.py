@@ -1,7 +1,8 @@
-from datetime import datetime
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
+
+from app.schemas.common import UTCDatetime
 
 
 class NotificationListItem(BaseModel):
@@ -28,7 +29,7 @@ class NotificationListItem(BaseModel):
     related_post_id: Optional[int] = None
     related_chat_room_id: Optional[int] = None
     is_read: bool
-    created_at: datetime
+    created_at: UTCDatetime
 
 
 class NotificationListResponse(BaseModel):

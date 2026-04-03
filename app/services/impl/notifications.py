@@ -46,7 +46,7 @@ class NotificationsService:
                     "related_post_id": n.related_post_id,
                     "related_chat_room_id": n.related_chat_room_id,
                     "is_read": n.is_read,
-                    "created_at": n.created_at.isoformat(),
+                    "created_at": n.created_at.isoformat() + "Z",
                 }
                 for n in notifications
             ],

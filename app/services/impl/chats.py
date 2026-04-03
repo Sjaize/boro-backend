@@ -184,7 +184,7 @@ class ChatsService:
                     "sender_user_id": user_id,
                     "message_type": message.message_type,
                     "content": message.content,
-                    "created_at": message.created_at.isoformat(),
+                    "created_at": message.created_at.isoformat() + "Z",
                 },
             )
         

@@ -1,7 +1,8 @@
-from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
+
+from app.schemas.common import UTCDatetime
 
 
 class UserMeResponse(BaseModel):
@@ -129,7 +130,7 @@ class ReviewListItem(BaseModel):
     review_id: int
     rating: int
     comment: Optional[str] = None
-    created_at: datetime
+    created_at: UTCDatetime
 
 
 class ReviewListResponse(BaseModel):

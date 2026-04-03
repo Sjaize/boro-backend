@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
+from app.schemas.common import UTCDatetime
 
 
 class PostListItem(BaseModel):
@@ -32,7 +32,7 @@ class PostListItem(BaseModel):
     like_count: int
     chat_count: int
     status: str
-    created_at: datetime
+    created_at: UTCDatetime
 
 
 class PostCreate(BaseModel):
@@ -150,7 +150,7 @@ class PostDetail(BaseModel):
     chat_count: int
     status: str
     is_liked_by_me: bool
-    created_at: datetime
+    created_at: UTCDatetime
 
 
 class PostUpdate(BaseModel):
