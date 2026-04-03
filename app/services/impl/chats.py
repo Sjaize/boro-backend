@@ -182,6 +182,9 @@ class ChatsService:
                     "chat_room_id": chat_room_id,
                     "message_id": message.id,
                     "sender_user_id": user_id,
+                    "message_type": message.message_type,
+                    "content": message.content,
+                    "created_at": message.created_at.isoformat(),
                 },
             )
         
