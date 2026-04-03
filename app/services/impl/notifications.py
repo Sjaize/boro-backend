@@ -211,23 +211,32 @@ class NotificationsService:
         return "failed"
 
     def _get_fcm_access_token_and_project_id(self) -> tuple[str | None, str | None]:
-        service_account_path = settings.FCM_SERVICE_ACCOUNT_FILE.strip()
-        if not service_account_path:
-            return None, None
+        # Try JSON string from env var first, then fall back to file path
+        raw_json = settings.FCM_SERVICE_ACCOUNT_JSON.strip()
+        if raw_json:
+            try:
+                service_account_info = json.loads(raw_json)
+            except json.JSONDecodeError:
+                logger.exception("FCM_SERVICE_ACCOUNT_JSON is not valid JSON.")
+                return None, None
+        else:
+            service_account_path = settings.FCM_SERVICE_ACCOUNT_FILE.strip()
+            if not service_account_path:
+                return None, None
 
-        service_account_file = Path(service_account_path)
-        if not service_account_file.exists():
-            logger.warning("FCM service account file was not found: %s", service_account_file)
-            return None, None
+            service_account_file = Path(service_account_path)
+            if not service_account_file.exists():
+                logger.warning("FCM service account file was not found: %s", service_account_file)
+                return None, None
 
-        try:
-            service_account_info = json.loads(service_account_file.read_text(encoding="utf-8"))
-        except OSError:
-            logger.exception("Unable to read FCM service account file.")
-            return None, None
-        except json.JSONDecodeError:
-            logger.exception("FCM service account file is not valid JSON.")
-            return None, None
+            try:
+                service_account_info = json.loads(service_account_file.read_text(encoding="utf-8"))
+            except OSError:
+                logger.exception("Unable to read FCM service account file.")
+                return None, None
+            except json.JSONDecodeError:
+                logger.exception("FCM service account file is not valid JSON.")
+                return None, None
 
         access_token = self._request_google_access_token(service_account_info)
         if access_token is None:

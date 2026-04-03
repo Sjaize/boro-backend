@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     FCM_PROJECT_ID: str = ""
     FCM_SERVICE_ACCOUNT_FILE: str = ""
+    FCM_SERVICE_ACCOUNT_JSON: str = ""
     FCM_TIMEOUT_SECONDS: int = 10
 
     AWS_ACCESS_KEY_ID: str = ""
