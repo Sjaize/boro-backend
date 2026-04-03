@@ -124,6 +124,7 @@ class ChatMessageListItem(BaseModel):
                 "content": "안녕하세요! 보조배터리 아직 필요하신가요?",
                 "created_at": "2026-03-30T15:58:00Z",
                 "is_mine": True,
+                "is_read": True,
             }
         },
     )
@@ -133,6 +134,7 @@ class ChatMessageListItem(BaseModel):
     content: str
     created_at: datetime
     is_mine: bool
+    is_read: bool = False
 
 
 class ChatMessageCreate(BaseModel):

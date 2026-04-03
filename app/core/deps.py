@@ -24,8 +24,13 @@ from app.services.mock import notifications as mock_notifications
 from app.services.mock import posts as mock_posts
 from app.services.mock import transactions as mock_transactions
 from app.services.mock import users as mock_users
+from app.api.v1.websocket import manager as ws_manager
 
 MOCK_CURRENT_USER = {"id": 1, "nickname": "홍길동", "region_name": "역삼동"}
+
+
+def get_websocket_manager():
+    return ws_manager
 
 
 async def get_current_user(
@@ -93,7 +98,7 @@ def get_posts_service(
 def get_chats_service(db: Session = Depends(get_db)):
     if settings.MOCK_MODE:
         return mock_chats.MockChatsService()
-    return ChatsService(db)
+    return ChatsService(db, ws_manager)
 
 
 def get_transactions_repository(

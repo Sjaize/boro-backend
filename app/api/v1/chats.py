@@ -1,6 +1,8 @@
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import FileResponse
 
 from app.core.deps import get_chats_service, get_current_user
 from app.schemas.chat import (
@@ -15,6 +17,12 @@ from app.schemas.chat import (
 from app.schemas.common import DataResponse
 
 router = APIRouter(prefix="/api/chats", tags=["Chats"])
+TEST_CHAT_PAGE = Path(__file__).resolve().parents[3] / "test_chat.html"
+
+
+@router.get("/test-page", include_in_schema=False)
+async def chat_test_page():
+    return FileResponse(TEST_CHAT_PAGE)
 
 
 @router.get(
@@ -85,7 +93,7 @@ async def send_message(
     current_user: dict = Depends(get_current_user),
     service=Depends(get_chats_service),
 ):
-    return {"data": service.send_message(chat_room_id, current_user["id"], body.model_dump())}
+    return {"data": await service.send_message(chat_room_id, current_user["id"], body.model_dump())}
 
 
 @router.patch(
@@ -100,4 +108,4 @@ async def mark_read(
     current_user: dict = Depends(get_current_user),
     service=Depends(get_chats_service),
 ):
-    return {"data": service.mark_read(chat_room_id, current_user["id"], body.last_read_message_id)}
+    return {"data": await service.mark_read(chat_room_id, current_user["id"], body.last_read_message_id)}

@@ -5,9 +5,10 @@ from app.core.exceptions import NotFoundError, ForbiddenError
 from app.models.user import User
 
 class ChatsService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, ws_manager=None):
         self.db = db
         self.repo = ChatsRepository(db)
+        self.ws_manager = ws_manager
 
     def list_chat_rooms(self, user_id: int, type_filter: str, page: int, size: int) -> dict:
         chat_rooms = self.repo.list_chat_rooms(user_id, type_filter, page, size)
@@ -94,6 +95,11 @@ class ChatsService:
         if not my_participant:
             raise ForbiddenError("채팅방에 참여하고 있지 않습니다.")
             
+        # 상대방의 마지막 읽은 메시지 ID 가져오기
+        participants = self.repo.get_participants(chat_room_id)
+        partner = next((p for p in participants if p.user_id != user_id), None)
+        partner_last_read_id = partner.last_read_message_id if partner and partner.last_read_message_id else 0
+            
         messages = self.repo.list_messages(chat_room_id, cursor, size)
         
         result = []
@@ -104,7 +110,8 @@ class ChatsService:
                 "message_type": msg.message_type,
                 "content": msg.content,
                 "created_at": msg.created_at,
-                "is_mine": msg.sender_user_id == user_id
+                "is_mine": msg.sender_user_id == user_id,
+                "is_read": msg.id <= partner_last_read_id
             })
             
         next_cursor = result[-1]["message_id"] if len(result) == size else None
@@ -115,7 +122,7 @@ class ChatsService:
             "has_next": len(result) == size
         }
 
-    def send_message(self, chat_room_id: int, user_id: int, data: dict) -> dict:
+    async def send_message(self, chat_room_id: int, user_id: int, data: dict) -> dict:
         my_participant = self.repo.get_participant(chat_room_id, user_id)
         if not my_participant:
             raise ForbiddenError("채팅방에 참여하고 있지 않습니다.")
@@ -130,11 +137,33 @@ class ChatsService:
         # Update chat room last message
         self.repo.update_last_message(chat_room_id, message.content, message.created_at)
         
-        # Increment unread count for others
-        self.repo.increment_unread_counts(chat_room_id, user_id)
+        # 상대방 찾기
+        participants = self.repo.get_participants(chat_room_id)
+        partner = next((p for p in participants if p.user_id != user_id), None)
+        
+        is_read = False
+        if partner and self.ws_manager and self.ws_manager.is_user_in_room(partner.user_id, chat_room_id):
+            # 상대방이 현재 방에 접속 중이면 즉시 읽음 처리
+            self.repo.mark_as_read(chat_room_id, partner.user_id, message.id)
+            is_read = True
+        else:
+            # 상대방이 없거나 접속 중이 아니면 안 읽음 카운트 증가
+            self.repo.increment_unread_counts(chat_room_id, user_id)
         
         self.db.commit()
+
+        if self.ws_manager:
+            await self.ws_manager.broadcast_to_room(
+                chat_room_id,
+                {
+                    "type": "NEW_MESSAGE",
+                    "chat_room_id": chat_room_id,
+                    "message_id": message.id,
+                    "sender_user_id": user_id,
+                },
+            )
         
+        # 발신자에게 즉시 응답 전송 (상대방이 읽었는지 여부 포함 가능)
         return {
             "message_id": message.id,
             "chat_room_id": chat_room_id,
@@ -142,16 +171,31 @@ class ChatsService:
             "message_type": message.message_type,
             "content": message.content,
             "created_at": message.created_at,
-            "is_mine": True
+            "is_mine": True,
+            "is_read": is_read
         }
 
-    def mark_read(self, chat_room_id: int, user_id: int, last_read_message_id: int) -> dict:
+    async def mark_read(self, chat_room_id: int, user_id: int, last_read_message_id: int) -> dict:
         my_participant = self.repo.mark_as_read(chat_room_id, user_id, last_read_message_id)
         if not my_participant:
             raise ForbiddenError("채팅방에 참여하고 있지 않습니다.")
             
         self.db.commit()
         
+        # 상대방에게 내가 읽었음을 실시간으로 알림
+        participants = self.repo.get_participants(chat_room_id)
+        partner = next((p for p in participants if p.user_id != user_id), None)
+        
+        if partner and self.ws_manager:
+            await self.ws_manager.broadcast_to_user(
+                partner.user_id,
+                {
+                    "type": "MESSAGE_READ",
+                    "chat_room_id": chat_room_id,
+                    "last_read_message_id": last_read_message_id
+                }
+            )
+            
         return {
             "chat_room_id": chat_room_id,
             "last_read_message_id": last_read_message_id,

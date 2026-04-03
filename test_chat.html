@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Boro 채팅 실시간 테스트</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; gap: 30px; }
+        .phone-mockup { background: white; width: 350px; height: 750px; border-radius: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 8px solid #333; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background: #fff; padding: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .ws-status { font-size: 12px; padding: 4px 8px; border-radius: 12px; background: #eee; color: #666; cursor: pointer; }
+        .ws-status.connected { background: #e6f4ea; color: #1e8e3e; }
+        .chat-area { flex: 1; padding: 15px; overflow-y: auto; background: #a9bdce; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 70%; padding: 8px 12px; border-radius: 15px; font-size: 14px; position: relative; word-break: break-all; }
+        .message.me { background: #fee500; align-self: flex-end; border-top-right-radius: 3px; }
+        .message.other { background: #fff; align-self: flex-start; border-top-left-radius: 3px; }
+        .unread-mark { color: #f00; font-size: 11px; font-weight: bold; position: absolute; left: -15px; bottom: 2px; }
+        .input-area { background: #fff; padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+        button.send-btn { background: #fee500; border: none; padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .controls { background: #f8f9fa; padding: 10px; font-size: 12px; text-align: center; border-top: 1px solid #eee; }
+        button.action-btn { background: #fff; border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .log-console { height: 100px; background: #222; color: #0f0; font-size: 11px; padding: 10px; overflow-y: auto; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+    <!-- User A (ID: 1) UI -->
+    <div class="phone-mockup">
+        <div class="header">
+            <span>유저 A (ID:1)</span>
+            <span class="ws-status" id="status1" onclick="toggleWS(1)">소켓 연결 (방 입장)</span>
+        </div>
+        <div class="chat-area" id="chat1"></div>
+        <div class="input-area">
+            <input type="text" id="input1" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') sendMessage(1)">
+            <button class="send-btn" onclick="sendMessage(1)">전송</button>
+        </div>
+        <div class="controls">
+            <button class="action-btn" onclick="markRead(1)">👀 방 들어와서 모두 읽기 (PATCH)</button>
+        </div>
+        <div class="log-console" id="log1"></div>
+    </div>
+
+    <!-- User B (ID: 2) UI -->
+    <div class="phone-mockup">
+        <div class="header">
+            <span>유저 B (ID:2)</span>
+            <span class="ws-status" id="status2" onclick="toggleWS(2)">소켓 연결 (방 입장)</span>
+        </div>
+        <div class="chat-area" id="chat2"></div>
+        <div class="input-area">
+            <input type="text" id="input2" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') sendMessage(2)">
+            <button class="send-btn" onclick="sendMessage(2)">전송</button>
+        </div>
+        <div class="controls">
+            <button class="action-btn" onclick="markRead(2)">👀 방 들어와서 모두 읽기 (PATCH)</button>
+        </div>
+        <div class="log-console" id="log2"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin === "null" ? "http://127.0.0.1:8080" : window.location.origin;
+        const WS_BASE = window.location.origin === "null"
+            ? "ws://127.0.0.1:8080"
+            : `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`;
+        const ROOM_ID = 1;
+        
+        let wsConnections = { 1: null, 2: null };
+        let latestMsgId = { 1: 0, 2: 0 };
+        let latestIncomingMsgId = { 1: 0, 2: 0 };
+        let lastPatchedReadMsgId = { 1: 0, 2: 0 };
+
+        function log(userId, text) {
+            const el = document.getElementById(`log${userId}`);
+            el.innerHTML += `<div>> ${text}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function toggleWS(userId) {
+            const statusEl = document.getElementById(`status${userId}`);
+            if (wsConnections[userId]) {
+                wsConnections[userId].close();
+            } else {
+                const ws = new WebSocket(`${WS_BASE}/ws/chats/${ROOM_ID}?user_id=${userId}`);
+                ws.onopen = async () => {
+                    statusEl.innerText = "소켓 연결됨 (방 나감)";
+                    statusEl.classList.add("connected");
+                    log(userId, "WebSocket Connected");
+                    await loadMessages(userId);
+                    await autoMarkRead(userId);
+                };
+                ws.onclose = () => {
+                    statusEl.innerText = "소켓 연결 (방 입장)";
+                    statusEl.classList.remove("connected");
+                    wsConnections[userId] = null;
+                    log(userId, "WebSocket Disconnected");
+                };
+                ws.onmessage = async (e) => {
+                    const data = JSON.parse(e.data);
+                    log(userId, `이벤트 수신: ${data.type}`);
+                    // 새 메시지가 오거나 읽음 이벤트가 오면 화면 새로고침
+                    if (data.type === 'NEW_MESSAGE') {
+                        await loadMessages(userId);
+                        if (data.sender_user_id !== userId) {
+                            await autoMarkRead(userId);
+                        }
+                    }
+                    if (data.type === 'MESSAGE_READ') {
+                        await loadMessages(userId);
+                    }
+                };
+                wsConnections[userId] = ws;
+            }
+        }
+
+        async function loadMessages(userId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/chats/${ROOM_ID}/messages`, {
+                    headers: { "X-User-Id": userId.toString() }
+                });
+                const json = await res.json();
+                const chatArea = document.getElementById(`chat${userId}`);
+                chatArea.innerHTML = "";
+                latestMsgId[userId] = 0;
+                latestIncomingMsgId[userId] = 0;
+                
+                const msgs = json.data.messages.reverse(); 
+                msgs.forEach(m => {
+                    latestMsgId[userId] = Math.max(latestMsgId[userId], m.message_id);
+                    const isMe = m.sender_user_id === userId;
+                    if (!isMe) {
+                        latestIncomingMsgId[userId] = Math.max(latestIncomingMsgId[userId], m.message_id);
+                    }
+                    // 내가 보낸 메시지인데 안 읽었으면 1 표시
+                    const unreadMark = (isMe && !m.is_read) ? `<span class="unread-mark">1</span>` : "";
+                    
+                    chatArea.innerHTML += `
+                        <div class="message ${isMe ? 'me' : 'other'}">
+                            ${unreadMark}
+                            ${m.content}
+                        </div>
+                    `;
+                });
+                chatArea.scrollTop = chatArea.scrollHeight;
+            } catch (e) {
+                log(userId, "목록 로드 실패 (서버 켜져있는지 확인)");
+            }
+        }
+
+        async function autoMarkRead(userId) {
+            const targetMessageId = latestIncomingMsgId[userId];
+            if (!targetMessageId || targetMessageId <= lastPatchedReadMsgId[userId]) {
+                return;
+            }
+
+            try {
+                await fetch(`${API_BASE}/api/chats/${ROOM_ID}/read`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json", "X-User-Id": userId.toString() },
+                    body: JSON.stringify({ last_read_message_id: targetMessageId })
+                });
+                lastPatchedReadMsgId[userId] = targetMessageId;
+                log(userId, `AUTO PATCH read: ${targetMessageId}`);
+            } catch (e) {
+                log(userId, "AUTO PATCH failed");
+            }
+        }
+
+        async function sendMessage(userId) {
+            const input = document.getElementById(`input${userId}`);
+            const content = input.value.trim();
+            if(!content) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/chats/${ROOM_ID}/messages`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-User-Id": userId.toString() },
+                    body: JSON.stringify({ message_type: "text", content: content })
+                });
+                const result = await res.json();
+                log(userId, `메시지 전송 (is_read: ${result.data.is_read})`);
+                input.value = "";
+                await loadMessages(userId);
+                await autoMarkRead(userId);
+                return;
+                loadMessages(userId); // 내 화면 갱신
+            } catch(e) {
+                log(userId, "전송 실패");
+            }
+        }
+
+        async function markRead(userId) {
+            const targetMessageId = latestIncomingMsgId[userId];
+            if(!targetMessageId) return;
+            try {
+                await fetch(`${API_BASE}/api/chats/${ROOM_ID}/read`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json", "X-User-Id": userId.toString() },
+                    body: JSON.stringify({ last_read_message_id: targetMessageId })
+                });
+                log(userId, `PATCH 읽음 처리 완료`);
+                lastPatchedReadMsgId[userId] = targetMessageId;
+                await loadMessages(userId);
+            } catch(e) {
+                log(userId, "읽음 처리 실패");
+            }
+        }
+
+        // 페이지 로드 시 메시지 목록 가져오기
+        window.onload = () => {
+            if (window.location.origin === "null") {
+                log(1, "CORS를 피하려면 http://127.0.0.1:8080/api/chats/test-page 로 여세요.");
+                log(2, "CORS를 피하려면 http://127.0.0.1:8080/api/chats/test-page 로 여세요.");
+            }
+            loadMessages(1);
+            loadMessages(2);
+        };
+    </script>
+</body>
+</html>
