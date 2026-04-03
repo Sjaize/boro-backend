@@ -13,6 +13,11 @@ class Settings(BaseSettings):
 
     KAKAO_API_KEY: str = ""
 
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_S3_BUCKET: str = ""
+    AWS_REGION: str = "ap-northeast-2"
+
     POSTGRES_USER: str = "boro"
     POSTGRES_PASSWORD: str = "password"
     POSTGRES_DB: str = "boro_db"
