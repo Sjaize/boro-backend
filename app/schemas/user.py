@@ -1,6 +1,7 @@
-from typing import List, Optional
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class UserMeResponse(BaseModel):
@@ -9,16 +10,18 @@ class UserMeResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 1,
-                "nickname": "홍길동",
+                "nickname": "민수",
                 "profile_image_url": "https://picsum.photos/seed/user1/200",
                 "region_name": "역삼동",
                 "trust_score": 4.8,
                 "borrow_count": 3,
                 "lend_count": 5,
                 "like_count": 12,
+                "nearby_urgent_alerts_enabled": False,
             }
         },
     )
+
     id: int
     nickname: str
     profile_image_url: Optional[str] = None
@@ -27,25 +30,26 @@ class UserMeResponse(BaseModel):
     borrow_count: int
     lend_count: int
     like_count: int
+    nearby_urgent_alerts_enabled: bool
 
 
 class UserUpdate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "nickname": "홍길동",
+                "nickname": "민수",
                 "profile_image_url": "https://picsum.photos/seed/user1/200",
             }
         }
     )
+
     nickname: Optional[str] = None
     profile_image_url: Optional[str] = None
 
 
 class LocationUpdate(BaseModel):
-    model_config = ConfigDict(
-        json_schema_extra={"example": {"lat": 37.5006, "lng": 127.0364}}
-    )
+    model_config = ConfigDict(json_schema_extra={"example": {"lat": 37.5006, "lng": 127.0364}})
+
     lat: float
     lng: float
 
@@ -61,6 +65,7 @@ class LocationResponse(BaseModel):
             }
         }
     )
+
     region_name: str
     full_address: str
     lat: float
@@ -70,11 +75,17 @@ class LocationResponse(BaseModel):
 class UserSettingsUpdate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"notification_radius_m": 1500, "interest_keywords": ["전자기기", "가구"]}
+            "example": {
+                "notification_radius_m": 1500,
+                "interest_keywords": ["전자기기", "캠핑"],
+                "nearby_urgent_alerts_enabled": True,
+            }
         }
     )
+
     notification_radius_m: Optional[int] = None
     interest_keywords: Optional[list[str]] = None
+    nearby_urgent_alerts_enabled: Optional[bool] = None
 
 
 class UserProfileResponse(BaseModel):
@@ -83,15 +94,16 @@ class UserProfileResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 2,
-                "nickname": "동네주민",
+                "nickname": "지연",
                 "profile_image_url": "https://picsum.photos/seed/user2/200",
-                "region_name": "역삼동",
+                "region_name": "선릉동",
                 "completed_transaction_count": 10,
                 "trust_score": 4.7,
                 "review_count": 8,
             }
         },
     )
+
     id: int
     nickname: str
     profile_image_url: Optional[str] = None
@@ -108,11 +120,12 @@ class ReviewListItem(BaseModel):
             "example": {
                 "review_id": 1,
                 "rating": 5,
-                "comment": "시간 약속을 잘 지켜줬어요!",
+                "comment": "시간 약속을 잘 지켜주셨어요.",
                 "created_at": "2026-03-30T12:34:56Z",
             }
         },
     )
+
     review_id: int
     rating: int
     comment: Optional[str] = None
@@ -127,7 +140,7 @@ class ReviewListResponse(BaseModel):
                     {
                         "review_id": 1,
                         "rating": 5,
-                        "comment": "시간 약속을 잘 지켜줬어요!",
+                        "comment": "시간 약속을 잘 지켜주셨어요.",
                         "created_at": "2026-03-30T12:34:56Z",
                     },
                     {
@@ -143,6 +156,7 @@ class ReviewListResponse(BaseModel):
             }
         }
     )
+
     reviews: List[ReviewListItem]
     page: int
     size: int
@@ -154,11 +168,12 @@ class UserUpdateResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 1,
-                "nickname": "홍길동",
+                "nickname": "민수",
                 "profile_image_url": "https://picsum.photos/seed/user1/200",
             }
         }
     )
+
     id: int
     nickname: str
     profile_image_url: Optional[str] = None
@@ -167,8 +182,14 @@ class UserUpdateResponse(BaseModel):
 class UserSettingsResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"notification_radius_m": 1500, "interest_keywords": ["전자기기", "가구"]}
+            "example": {
+                "notification_radius_m": 1500,
+                "interest_keywords": ["전자기기", "캠핑"],
+                "nearby_urgent_alerts_enabled": True,
+            }
         }
     )
+
     notification_radius_m: Optional[int] = None
     interest_keywords: Optional[list[str]] = None
+    nearby_urgent_alerts_enabled: bool

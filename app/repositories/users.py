@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Optional
 
 from sqlalchemy import desc, func, select
@@ -110,6 +111,7 @@ class UserRepository:
     def update_location(self, user: User, *, lat: float, lng: float, region_name: str | None = None) -> User:
         user.current_lat = lat
         user.current_lng = lng
+        user.location_updated_at = datetime.now(UTC).replace(tzinfo=None)
         
         if region_name is not None:
             user.region_name = region_name
@@ -125,9 +127,13 @@ class UserRepository:
         *,
         notification_radius_m: int | None,
         interest_keywords: list[str] | None,
+        nearby_urgent_alerts_enabled: bool | None,
     ) -> User:
         if notification_radius_m is not None:
             user.notification_radius_m = notification_radius_m
+
+        if nearby_urgent_alerts_enabled is not None:
+            user.nearby_urgent_alerts_enabled = nearby_urgent_alerts_enabled
 
         if interest_keywords is not None:
             # Clear current keywords first so re-saving the same list stays idempotent.

@@ -2,19 +2,20 @@ class MockUsersService:
     def get_my_profile(self, user_id: int) -> dict:
         return {
             "id": 1,
-            "nickname": "홍길동",
+            "nickname": "민수",
             "profile_image_url": "https://picsum.photos/seed/user1/200",
             "region_name": "역삼동",
             "trust_score": 4.8,
             "borrow_count": 3,
             "lend_count": 5,
             "like_count": 12,
+            "nearby_urgent_alerts_enabled": False,
         }
 
     def update_my_profile(self, user_id: int, data: dict) -> dict:
         return {
             "id": 1,
-            "nickname": data.get("nickname", "홍길동"),
+            "nickname": data.get("nickname", "민수"),
             "profile_image_url": data.get("profile_image_url", "https://picsum.photos/seed/user1/200"),
         }
 
@@ -29,13 +30,14 @@ class MockUsersService:
     def update_settings(self, user_id: int, data: dict) -> dict:
         return {
             "notification_radius_m": data.get("notification_radius_m", 1500),
-            "interest_keywords": data.get("interest_keywords", ["전자기기", "가구"]),
+            "interest_keywords": data.get("interest_keywords", ["전자기기", "캠핑"]),
+            "nearby_urgent_alerts_enabled": data.get("nearby_urgent_alerts_enabled", False),
         }
 
     def get_user_profile(self, user_id: int) -> dict:
         return {
             "id": user_id,
-            "nickname": f"유저{user_id}",
+            "nickname": f"사용자{user_id}",
             "profile_image_url": f"https://picsum.photos/seed/user{user_id}/200",
             "region_name": "역삼동",
             "completed_transaction_count": 10,
@@ -49,7 +51,7 @@ class MockUsersService:
                 {
                     "review_id": 1,
                     "rating": 5,
-                    "comment": "시간 약속을 잘 지켜줬어요!",
+                    "comment": "시간 약속을 잘 지켜주셨어요.",
                     "created_at": "2026-03-30T12:34:56Z",
                 },
                 {

@@ -33,6 +33,7 @@ class UsersService:
             "borrow_count": self.user_repository.count_borrow_transactions(user_id),
             "lend_count": self.user_repository.count_lend_transactions(user_id),
             "like_count": self.user_repository.count_post_likes(user_id),
+            "nearby_urgent_alerts_enabled": bool(user.nearby_urgent_alerts_enabled),
         }
 
     def update_my_profile(self, user_id: int, data: dict) -> dict:
@@ -140,10 +141,15 @@ class UsersService:
         if interest_keywords is not None:
             interest_keywords = self._normalize_interest_keywords(interest_keywords)
 
+        nearby_urgent_alerts_enabled = payload.get("nearby_urgent_alerts_enabled")
+        if nearby_urgent_alerts_enabled is not None:
+            nearby_urgent_alerts_enabled = bool(nearby_urgent_alerts_enabled)
+
         updated_user = self.user_repository.update_settings(
             user,
             notification_radius_m=notification_radius_m,
             interest_keywords=interest_keywords,
+            nearby_urgent_alerts_enabled=nearby_urgent_alerts_enabled,
         )
 
         return {
@@ -152,6 +158,7 @@ class UsersService:
                 keyword.keyword
                 for keyword in updated_user.interest_keywords
             ],
+            "nearby_urgent_alerts_enabled": bool(updated_user.nearby_urgent_alerts_enabled),
         }
 
     def get_user_profile(self, user_id: int) -> dict:

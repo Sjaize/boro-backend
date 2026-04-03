@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.core.db import Base
@@ -19,7 +19,9 @@ class User(Base, TimestampMixin):
     region_name = Column(String(100))
     current_lat = Column(Numeric(precision=10, scale=7))
     current_lng = Column(Numeric(precision=10, scale=7))
+    location_updated_at = Column(DateTime)
     notification_radius_m = Column(Integer, default=1500)
+    nearby_urgent_alerts_enabled = Column(Boolean, default=False, nullable=False)
     completed_transaction_count = Column(Integer, default=0)
     trust_score = Column(Numeric(precision=3, scale=2), default=5.0)
     status = Column(String(20), default="active")  # active, banned

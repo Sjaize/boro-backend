@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import logging
 from decimal import Decimal
 
 from app.core.exceptions import BadRequestError, ConflictError, ForbiddenError, NotFoundError
 from app.models.post import Post
 from app.repositories.posts import PostRepository
+from app.services.impl.notifications import NotificationsService
 
 ALLOWED_POST_TYPES = {"LEND", "BORROW"}
 ALLOWED_POST_STATUSES = {"AVAILABLE", "RESERVED", "COMPLETED"}
 ALLOWED_SORTS = {"created_at", "price", "like_count"}
 DEFAULT_PAGE = 1
 DEFAULT_SIZE = 20
+logger = logging.getLogger(__name__)
 
 
 class PostsService:
@@ -32,6 +35,11 @@ class PostsService:
         self._ensure_user_exists(user_id)
         payload = self._normalize_create_payload(data)
         post = self.post_repository.create_post(user_id, payload)
+        if post.is_urgent:
+            try:
+                NotificationsService(self.post_repository.db).notify_urgent_post(post)
+            except Exception:
+                logger.exception("Failed to create urgent notifications for post %s", post.id)
         return {"post_id": post.id}
 
     def get_post(self, post_id: int, user_id: int) -> dict:
