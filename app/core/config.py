@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    KAKAO_API_KEY: str
+    KAKAO_API_KEY: str = ""
 
     POSTGRES_USER: str = "boro"
     POSTGRES_PASSWORD: str = "password"
