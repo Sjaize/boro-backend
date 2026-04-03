@@ -20,6 +20,8 @@ from app.repositories.notification import NotificationRepository
 EARTH_RADIUS_M = 6_371_000
 URGENT_LOCATION_MAX_AGE_HOURS = 6
 URGENT_POST_TITLE = "근처에 긴급 게시글이 올라왔어요"
+INTEREST_POST_TITLE = "관심 키워드 게시글이 올라왔어요!"
+CHAT_MESSAGE_TITLE = "새로운 채팅 메시지가 도착했어요"
 NOTIFICATION_NOT_FOUND_MESSAGE = "알림을 찾을 수 없습니다."
 ALLOWED_PLATFORMS = {"android", "ios", "web"}
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -123,6 +125,53 @@ class NotificationsService:
             self.repo.deactivate_device_tokens(invalid_device_tokens)
 
         return len(persisted_notifications)
+
+    def notify_interest_post(self, post: Post) -> int:
+        candidate_user_ids = self.repo.find_interest_keyword_candidates(
+            excluded_user_id=post.user_id,
+            title=post.title or "",
+            category=post.category or "",
+        )
+        if not candidate_user_ids:
+            return 0
+
+        notifications = [
+            Notification(
+                user_id=user_id,
+                type="interest_post",
+                title=INTEREST_POST_TITLE,
+                body=post.title,
+                related_post_id=post.id,
+            )
+            for user_id in candidate_user_ids
+        ]
+        persisted = self.repo.create_notifications(notifications)
+        invalid_tokens = self._send_push_notifications(persisted)
+        if invalid_tokens:
+            self.repo.deactivate_device_tokens(invalid_tokens)
+        return len(persisted)
+
+    def notify_chat_message(
+        self,
+        *,
+        partner_user_id: int,
+        chat_room_id: int,
+        post_id: int,
+        sender_nickname: str,
+        message_content: str,
+    ) -> None:
+        notification = Notification(
+            user_id=partner_user_id,
+            type="chat_message",
+            title=CHAT_MESSAGE_TITLE,
+            body=f"{sender_nickname}: {message_content}",
+            related_post_id=post_id,
+            related_chat_room_id=chat_room_id,
+        )
+        persisted = self.repo.create_notifications([notification])
+        invalid_tokens = self._send_push_notifications(persisted)
+        if invalid_tokens:
+            self.repo.deactivate_device_tokens(invalid_tokens)
 
     def _send_push_notifications(self, notifications: list[Notification]) -> list[str]:
         if not notifications:

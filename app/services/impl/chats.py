@@ -1,8 +1,11 @@
+import logging
 from typing import Optional
 from sqlalchemy.orm import Session
 from app.repositories.chats import ChatsRepository
 from app.core.exceptions import NotFoundError, ForbiddenError
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 class ChatsService:
     def __init__(self, db: Session, ws_manager=None):
@@ -142,6 +145,7 @@ class ChatsService:
         partner = next((p for p in participants if p.user_id != user_id), None)
         
         is_read = False
+        should_notify_partner = False
         if partner and self.ws_manager and self.ws_manager.is_user_in_room(partner.user_id, chat_room_id):
             # 상대방이 현재 방에 접속 중이면 즉시 읽음 처리
             self.repo.mark_as_read(chat_room_id, partner.user_id, message.id)
@@ -149,8 +153,26 @@ class ChatsService:
         else:
             # 상대방이 없거나 접속 중이 아니면 안 읽음 카운트 증가
             self.repo.increment_unread_counts(chat_room_id, user_id)
-        
+            if partner:
+                should_notify_partner = True
+
         self.db.commit()
+
+        if should_notify_partner:
+            try:
+                from app.services.impl.notifications import NotificationsService
+                sender_user = self.db.get(User, user_id)
+                sender_nickname = sender_user.nickname if sender_user else "알 수 없음"
+                post_id = my_participant.chat_room.post_id
+                NotificationsService(self.db).notify_chat_message(
+                    partner_user_id=partner.user_id,
+                    chat_room_id=chat_room_id,
+                    post_id=post_id,
+                    sender_nickname=sender_nickname,
+                    message_content=message.content,
+                )
+            except Exception:
+                logger.exception("Failed to send chat notification for message %s", message.id)
 
         if self.ws_manager:
             await self.ws_manager.broadcast_to_room(

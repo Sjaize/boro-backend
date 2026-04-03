@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification, UserDeviceToken
-from app.models.user import User
+from app.models.user import User, UserInterestKeyword
 
 
 class NotificationRepository:
@@ -135,6 +135,34 @@ class NotificationRepository:
             .where(User.location_updated_at >= updated_after)
         )
         return list(self.db.execute(statement).scalars().all())
+
+    def find_interest_keyword_candidates(
+        self,
+        *,
+        excluded_user_id: int,
+        title: str,
+        category: str,
+    ) -> list[int]:
+        rows = (
+            self.db.execute(
+                select(UserInterestKeyword.user_id, UserInterestKeyword.keyword)
+                .join(User, User.id == UserInterestKeyword.user_id)
+                .where(User.id != excluded_user_id)
+                .where(User.status == "active")
+            )
+            .all()
+        )
+
+        title_lower = title.lower()
+        category_lower = category.lower()
+
+        matched: set[int] = set()
+        for user_id, keyword in rows:
+            kw = keyword.lower()
+            if kw in title_lower or kw in category_lower:
+                matched.add(user_id)
+
+        return list(matched)
 
     def create_notifications(self, notifications: list[Notification]) -> list[Notification]:
         if not notifications:

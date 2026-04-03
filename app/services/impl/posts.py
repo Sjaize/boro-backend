@@ -35,11 +35,16 @@ class PostsService:
         self._ensure_user_exists(user_id)
         payload = self._normalize_create_payload(data)
         post = self.post_repository.create_post(user_id, payload)
+        notifications_service = NotificationsService(self.post_repository.db)
         if post.is_urgent:
             try:
-                NotificationsService(self.post_repository.db).notify_urgent_post(post)
+                notifications_service.notify_urgent_post(post)
             except Exception:
                 logger.exception("Failed to create urgent notifications for post %s", post.id)
+        try:
+            notifications_service.notify_interest_post(post)
+        except Exception:
+            logger.exception("Failed to create interest notifications for post %s", post.id)
         return {"post_id": post.id}
 
     def get_post(self, post_id: int, user_id: int) -> dict:
