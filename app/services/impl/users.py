@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
+import httpx
 
+from app.core.config import settings
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.post import Post
 from app.models.user import User
@@ -11,6 +13,8 @@ ALLOWED_POST_TYPES = {"BORROW", "LEND"}
 DEFAULT_PAGE = 1
 DEFAULT_SIZE = 10
 DEFAULT_NOTIFICATION_RADIUS_M = 1500
+
+KAKAO_REVERSE_GEO_URL = "https://dapi.kakao.com/v2/local/geo/coord2address.json"
 
 
 class UsersService:
@@ -62,9 +66,7 @@ class UsersService:
         normalized_lat = self._normalize_coordinate(lat, "lat", -90, 90)
         normalized_lng = self._normalize_coordinate(lng, "lng", -180, 180)
 
-        # TODO: 실제 운영 환경에서는 카카오/구글 API 등을 통해 역지오코딩 수행
-        full_address = "서울특별시 강남구 역삼동"
-        region_name = self._extract_region_name(full_address)
+        full_address, region_name = self._get_kakao_address(normalized_lat, normalized_lng)
 
         updated_user = self.user_repository.update_location(
             user,
@@ -79,6 +81,44 @@ class UsersService:
             "lat": self._to_float(updated_user.current_lat),
             "lng": self._to_float(updated_user.current_lng),
         }
+
+    def _get_kakao_address(self, lat: float, lng: float) -> tuple[str, str]:
+        """카카오 API를 통해 위경도를 주소로 변환합니다."""
+        if not settings.KAKAO_API_KEY:
+            # API 키가 없는 경우 폴백 (개발용)
+            return "서울특별시 강남구 역삼동", "역삼동"
+
+        try:
+            with httpx.Client() as client:
+                response = client.get(
+                    KAKAO_REVERSE_GEO_URL,
+                    params={"x": lng, "y": lat},
+                    headers={"Authorization": f"KakaoAK {settings.KAKAO_API_KEY}"},
+                )
+                response.raise_for_status()
+                data = response.json()
+
+            if not data.get("documents"):
+                return "주소 정보를 찾을 수 없습니다", ""
+
+            address_info = data["documents"][0]
+            
+            # 지번 주소 우선 사용, 없으면 도로명 주소
+            address = address_info.get("address")
+            if address:
+                full_address = address.get("address_name", "")
+                region_name = address.get("region_3depth_name", "")
+            else:
+                road_address = address_info.get("road_address")
+                full_address = road_address.get("address_name", "") if road_address else ""
+                region_name = road_address.get("region_3depth_name", "") if road_address else ""
+
+            return full_address, region_name
+
+        except Exception as e:
+            # 에러 발생 시 로그를 남기고 기본값 반환 혹은 에러 발생
+            print(f"[Kakao API Error] {e}")
+            return "주소 변환 오류", ""
 
     def _extract_region_name(self, full_address: str) -> str:
         """전체 주소에서 마지막 단어(동네명)만 추출 (예: '서울특별시 강남구 역삼동' -> '역삼동')"""
